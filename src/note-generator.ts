@@ -126,13 +126,27 @@ export class NoteGenerator {
 				if (!keyValues.has(key)) {
 					keyValues.set(key, []);
 				}
-				keyValues.get(key)!.push(value);
+
+				// Special handling for array values - flatten them
+				if (value.startsWith('[') && value.endsWith(']')) {
+					// Parse the array and extract individual items
+					try {
+						const arrayContent = value.slice(1, -1); // Remove [ and ]
+						const items = this.parseYamlArray(arrayContent);
+						keyValues.get(key)!.push(...items);
+					} catch (error) {
+						// If parsing fails, treat as single value
+						keyValues.get(key)!.push(value);
+					}
+				} else {
+					keyValues.get(key)!.push(value);
+				}
 			} else {
 				nonKeyLines.push(line);
 			}
 		}
 
-		// Rebuild lines, combining duplicates into arrays
+		// Rebuild lines, combining duplicates into flat arrays
 		const result: string[] = [];
 		for (const line of lines) {
 			const keyMatch = line.match(/^([^:]+):/);
@@ -141,9 +155,11 @@ export class NoteGenerator {
 				const values = keyValues.get(key);
 
 				if (values && values.length > 1) {
-					// Multiple values - combine into array
+					// Multiple values - combine into flat array
 					if (!result.some(l => l.startsWith(key + ':'))) {
-						result.push(`${key}: [${values.join(', ')}]`);
+						// Remove duplicates and create flat array
+						const uniqueValues = [...new Set(values)];
+						result.push(`${key}: [${uniqueValues.join(', ')}]`);
 					}
 				} else if (values && values.length === 1) {
 					// Single value - add as-is
@@ -158,6 +174,52 @@ export class NoteGenerator {
 		}
 
 		return result;
+	}
+
+	private parseYamlArray(arrayContent: string): string[] {
+		const items: string[] = [];
+		let current = '';
+		let inQuotes = false;
+		let quoteChar = '';
+		let bracketCount = 0;
+
+		for (let i = 0; i < arrayContent.length; i++) {
+			const char = arrayContent[i];
+
+			if (char === '[') {
+				bracketCount++;
+				current += char;
+			} else if (char === ']') {
+				bracketCount--;
+				current += char;
+			} else if ((char === '"' || char === "'") && bracketCount === 0) {
+				if (!inQuotes) {
+					inQuotes = true;
+					quoteChar = char;
+				} else if (char === quoteChar) {
+					inQuotes = false;
+					quoteChar = '';
+				}
+				current += char;
+			} else if (char === ',' && !inQuotes && bracketCount === 0) {
+				// End of item
+				const trimmed = current.trim();
+				if (trimmed) {
+					items.push(trimmed);
+				}
+				current = '';
+			} else {
+				current += char;
+			}
+		}
+
+		// Add the last item
+		const trimmed = current.trim();
+		if (trimmed) {
+			items.push(trimmed);
+		}
+
+		return items;
 	}
 
 	private addRelationshipFields(lines: string[], entity: EnrichedEntity) {

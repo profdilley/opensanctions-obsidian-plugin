@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, requestUrl } from 'obsidian';
 import { OpenSanctionsEntity, SearchParams, SearchResponse, EnrichedEntity } from './types';
 
 export class OpenSanctionsApiClient {
@@ -51,21 +51,22 @@ export class OpenSanctionsApiClient {
 		}
 
 		try {
-			const response = await fetch(url.toString(), {
+			const response = await requestUrl({
+				url: url.toString(),
 				method: 'GET',
 				headers
 			});
 
-			if (!response.ok) {
-				await this.handleHttpError(response);
-			}
-
-			return await response.json();
+			return response.json;
 		} catch (error) {
-			if (error.message.includes('Failed to fetch')) {
+			// Handle HTTP errors from requestUrl
+			if (error.status) {
+				await this.handleHttpErrorFromRequestUrl(error);
+			} else if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
 				throw new Error('Network error: Could not connect to OpenSanctions. Check your internet connection.');
+			} else {
+				throw error;
 			}
-			throw error;
 		}
 	}
 
@@ -78,6 +79,41 @@ export class OpenSanctionsApiClient {
 			errorMessage = errorData.message || errorData.detail || response.statusText;
 		} catch {
 			errorMessage = response.statusText;
+		}
+
+		switch (status) {
+			case 400:
+				throw new Error(`Invalid request: ${errorMessage}`);
+			case 401:
+				throw new Error('API key is invalid. Please check your settings.');
+			case 403:
+				throw new Error('Access denied. Please check your API key permissions.');
+			case 404:
+				throw new Error('Entity not found in OpenSanctions database.');
+			case 429:
+				throw new Error('Rate limit exceeded. Please wait and try again.');
+			case 500:
+				throw new Error('OpenSanctions server error. Please try again later.');
+			default:
+				throw new Error(`Request failed (${status}): ${errorMessage}`);
+		}
+	}
+
+	private async handleHttpErrorFromRequestUrl(error: any) {
+		const status = error.status;
+		let errorMessage = '';
+
+		try {
+			// requestUrl error object may contain response data
+			if (error.json) {
+				errorMessage = error.json.message || error.json.detail || 'Unknown error';
+			} else if (error.text) {
+				errorMessage = error.text;
+			} else {
+				errorMessage = 'Unknown error';
+			}
+		} catch {
+			errorMessage = 'Unknown error';
 		}
 
 		switch (status) {

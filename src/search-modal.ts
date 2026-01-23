@@ -1,11 +1,12 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import { OpenSanctionsApiClient } from './api-client';
-import { PluginSettings, OpenSanctionsEntity, SearchParams } from './types';
+import { PluginSettings, OpenSanctionsEntity, SearchParams, ImportMode } from './types';
 import { PreviewModal } from './preview-modal';
 
 export class SearchModal extends Modal {
 	private apiClient: OpenSanctionsApiClient;
 	private settings: PluginSettings;
+	private mode: ImportMode;
 	private onSelect: (entities: OpenSanctionsEntity[]) => void;
 	private searchResults: OpenSanctionsEntity[] = [];
 	private selectedEntities: Set<string> = new Set();
@@ -14,10 +15,11 @@ export class SearchModal extends Modal {
 	private currentOffset = 0;
 	private isLoading = false;
 
-	constructor(app: App, apiClient: OpenSanctionsApiClient, settings: PluginSettings) {
+	constructor(app: App, apiClient: OpenSanctionsApiClient, settings: PluginSettings, mode: ImportMode = ImportMode.STANDARD) {
 		super(app);
 		this.apiClient = apiClient;
 		this.settings = settings;
+		this.mode = mode;
 	}
 
 	setHandler(caller: any, handler: (entities: OpenSanctionsEntity[]) => void) {
@@ -28,7 +30,8 @@ export class SearchModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: 'Search OpenSanctions' });
+		const title = this.mode === ImportMode.QUICK ? 'Quick Import - OpenSanctions' : 'Search OpenSanctions';
+		contentEl.createEl('h2', { text: title });
 
 		this.createSearchForm(contentEl);
 		this.createResultsSection(contentEl);
@@ -264,25 +267,43 @@ export class SearchModal extends Modal {
 		const buttonContainer = this.actionContainer.createDiv('button-container');
 
 		if (selectedCount > 0) {
+			// Mode indicator
+			const modeIndicator = buttonContainer.createEl('span', {
+				text: this.mode === ImportMode.QUICK ? 'Quick Import Mode' : 'Standard Mode',
+				cls: 'mode-indicator'
+			});
+
 			const selectionInfo = buttonContainer.createEl('span', {
 				text: `Selected: ${selectedCount} entit${selectedCount === 1 ? 'y' : 'ies'}`,
 				cls: 'selection-info'
 			});
 
-			const previewButton = buttonContainer.createEl('button', {
-				text: 'Preview Note'
-			});
-			previewButton.addEventListener('click', () => {
-				this.previewSelected();
-			});
+			if (this.mode === ImportMode.STANDARD) {
+				// Standard mode: Preview + Import buttons
+				const previewButton = buttonContainer.createEl('button', {
+					text: 'Preview Note'
+				});
+				previewButton.addEventListener('click', () => {
+					this.previewSelected();
+				});
 
-			const importButton = buttonContainer.createEl('button', {
-				text: 'Import Selected',
-				cls: 'mod-cta'
-			});
-			importButton.addEventListener('click', () => {
-				this.importSelected();
-			});
+				const importButton = buttonContainer.createEl('button', {
+					text: 'Import Selected',
+					cls: 'mod-cta'
+				});
+				importButton.addEventListener('click', () => {
+					this.importSelected();
+				});
+			} else {
+				// Quick mode: Direct import only
+				const quickImportButton = buttonContainer.createEl('button', {
+					text: 'Quick Import Selected',
+					cls: 'mod-cta quick-import-btn'
+				});
+				quickImportButton.addEventListener('click', () => {
+					this.quickImportSelected();
+				});
+			}
 		}
 	}
 
@@ -378,11 +399,60 @@ export class SearchModal extends Modal {
 			return;
 		}
 
+		// Track usage for each schema
+		this.trackConfigUsage(selectedResults);
+
 		if (this.onSelect) {
 			this.onSelect(selectedResults);
 		}
 
 		this.close();
+	}
+
+	private quickImportSelected() {
+		const selectedResults = this.searchResults.filter(e => this.selectedEntities.has(e.id));
+
+		if (selectedResults.length === 0) {
+			new Notice('No entities selected');
+			return;
+		}
+
+		// For Quick Import mode, temporarily use last-used field configurations
+		const originalFieldConfigs = { ...this.settings.fieldConfigs };
+
+		if (this.settings.quickImportSettings.rememberLastConfig) {
+			// Apply last-used configs for the schemas being imported
+			const schemas = [...new Set(selectedResults.map(e => e.schema))];
+			schemas.forEach(schema => {
+				if (this.settings.lastUsedFieldConfigs[schema]) {
+					this.settings.fieldConfigs[schema] = { ...this.settings.lastUsedFieldConfigs[schema] };
+				}
+			});
+		}
+
+		try {
+			if (this.onSelect) {
+				this.onSelect(selectedResults);
+			}
+		} finally {
+			// Restore original field configs
+			this.settings.fieldConfigs = originalFieldConfigs;
+		}
+
+		this.close();
+	}
+
+	private trackConfigUsage(entities: OpenSanctionsEntity[]) {
+		if (this.mode === ImportMode.STANDARD) {
+			// Save current configs as last-used for each schema encountered
+			const schemas = [...new Set(entities.map(e => e.schema))];
+			schemas.forEach(schema => {
+				if (this.settings.fieldConfigs[schema]) {
+					this.settings.lastUsedFieldConfigs[schema] = { ...this.settings.fieldConfigs[schema] };
+				}
+			});
+			// Note: settings will be saved by parent after import completes
+		}
 	}
 
 	private getCountryName(countryCode: string): string {
@@ -518,6 +588,18 @@ export class SearchModal extends Modal {
 				display: flex;
 				align-items: center;
 				justify-content: space-between;
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+
+			.mode-indicator {
+				color: var(--text-accent);
+				font-size: 0.85em;
+				font-weight: 600;
+				padding: 2px 6px;
+				background: var(--background-secondary);
+				border-radius: 4px;
+				border: 1px solid var(--interactive-accent);
 			}
 
 			.selection-info {
@@ -538,6 +620,12 @@ export class SearchModal extends Modal {
 				background: var(--interactive-accent);
 				color: white;
 				border-color: var(--interactive-accent);
+			}
+
+			.button-container button.quick-import-btn {
+				background: var(--color-green);
+				border-color: var(--color-green);
+				font-weight: 600;
 			}
 
 			.loading-state {

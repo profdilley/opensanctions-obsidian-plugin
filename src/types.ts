@@ -56,6 +56,12 @@ export interface FieldConfig {
 	[apiField: string]: FieldConfigItem;
 }
 
+// Import mode enum
+export enum ImportMode {
+	STANDARD = 'standard',
+	QUICK = 'quick'
+}
+
 export interface PluginSettings {
 	apiKey: string;
 	defaultFolder: string;
@@ -63,6 +69,11 @@ export interface PluginSettings {
 	includeSourceUrl: boolean;
 	includeImportDate: boolean;
 	fieldConfigs: Record<string, FieldConfig>; // Keyed by schema
+	lastUsedFieldConfigs: Record<string, FieldConfig>; // NEW: Last used configs for Quick Import
+	quickImportSettings: {                              // NEW: Quick Import preferences
+		enabled: boolean;
+		rememberLastConfig: boolean;
+	};
 	templates: Record<string, string>; // Keyed by schema
 }
 
@@ -129,5 +140,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	includeSourceUrl: true,
 	includeImportDate: true,
 	fieldConfigs: DEFAULT_FIELD_CONFIGS,
+	lastUsedFieldConfigs: {},
+	quickImportSettings: {
+		enabled: true,
+		rememberLastConfig: true
+	},
 	templates: {}
 };

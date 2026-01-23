@@ -1,5 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, Component } from 'obsidian';
-import { PluginSettings, DEFAULT_SETTINGS, OpenSanctionsEntity, SearchParams, SearchResponse, EnrichedEntity } from './src/types';
+import { PluginSettings, DEFAULT_SETTINGS, OpenSanctionsEntity, SearchParams, SearchResponse, EnrichedEntity, ImportMode } from './src/types';
 import { OpenSanctionsApiClient } from './src/api-client';
 import { SearchModal } from './src/search-modal';
 import { FieldConfigModal } from './src/field-config-modal';
@@ -15,18 +15,32 @@ export default class OpenSanctionsPlugin extends Plugin {
 		// Initialize API client
 		this.apiClient = new OpenSanctionsApiClient(this.settings.apiKey);
 
-		// Add ribbon icon
+		// Add standard search ribbon icon
 		const ribbonIconEl = this.addRibbonIcon('search', 'Search OpenSanctions', (evt: MouseEvent) => {
 			this.openSearchModal();
 		});
 		ribbonIconEl.addClass('opensanctions-ribbon-class');
 
-		// Add command
+		// Add Quick Import ribbon button (always add it for now)
+		const quickImportRibbon = this.addRibbonIcon('zap', 'Quick Import OpenSanctions', (evt: MouseEvent) => {
+			this.openQuickImportModal();
+		});
+		quickImportRibbon.addClass('opensanctions-quick-import-class');
+
+		// Add commands
 		this.addCommand({
 			id: 'search-opensanctions',
 			name: 'Search OpenSanctions',
 			callback: () => {
 				this.openSearchModal();
+			}
+		});
+
+		this.addCommand({
+			id: 'quick-import-opensanctions',
+			name: 'Quick Import OpenSanctions',
+			callback: () => {
+				this.openQuickImportModal();
 			}
 		});
 
@@ -61,7 +75,23 @@ export default class OpenSanctionsPlugin extends Plugin {
 			return;
 		}
 
-		const modal = new SearchModal(this.app, this.apiClient, this.settings);
+		const modal = new SearchModal(this.app, this.apiClient, this.settings, ImportMode.STANDARD);
+		modal.setHandler(this, this.handleEntitySelection);
+		modal.open();
+	}
+
+	openQuickImportModal() {
+		if (!this.settings.quickImportSettings.enabled) {
+			new Notice('Quick Import is disabled. Enable it in plugin settings.');
+			return;
+		}
+
+		if (!this.settings.apiKey) {
+			new Notice('Please set your OpenSanctions API key in plugin settings first');
+			return;
+		}
+
+		const modal = new SearchModal(this.app, this.apiClient, this.settings, ImportMode.QUICK);
 		modal.setHandler(this, this.handleEntitySelection);
 		modal.open();
 	}
@@ -83,6 +113,9 @@ export default class OpenSanctionsPlugin extends Plugin {
 				new Notice(`Error creating note for ${entity.caption}: ${error.message}`);
 			}
 		}
+
+		// Save settings to persist any config usage tracking changes
+		await this.saveSettings();
 	}
 }
 
@@ -161,6 +194,29 @@ class OpenSanctionsSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.includeImportDate)
 				.onChange(async (value) => {
 					this.plugin.settings.includeImportDate = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Quick Import Settings
+		containerEl.createEl('h3', { text: 'Quick Import Settings' });
+
+		new Setting(containerEl)
+			.setName('Enable Quick Import')
+			.setDesc('Enable Quick Import workflow functionality')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.quickImportSettings.enabled)
+				.onChange(async (value) => {
+					this.plugin.settings.quickImportSettings.enabled = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Remember Field Configurations')
+			.setDesc('Quick Import uses last-used field settings for each entity type')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.quickImportSettings.rememberLastConfig)
+				.onChange(async (value) => {
+					this.plugin.settings.quickImportSettings.rememberLastConfig = value;
 					await this.plugin.saveSettings();
 				}));
 

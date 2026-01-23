@@ -540,8 +540,22 @@ export class SearchModal extends Modal {
 	private addStyles() {
 		const styleEl = document.createElement('style');
 		styleEl.textContent = `
+			.modal-container {
+				max-height: 80vh;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.modal-content {
+				display: flex;
+				flex-direction: column;
+				height: 100%;
+			}
+
 			.search-form-container {
 				margin-bottom: 20px;
+				flex-shrink: 0;
 			}
 
 			.search-filters {
@@ -561,8 +575,10 @@ export class SearchModal extends Modal {
 			}
 
 			.search-results-container {
-				max-height: 400px;
+				max-height: 300px;
 				overflow-y: auto;
+				flex: 1;
+				min-height: 0;
 			}
 
 			.results-header h3 {
@@ -643,6 +659,10 @@ export class SearchModal extends Modal {
 				margin-top: 20px;
 				padding-top: 15px;
 				border-top: 1px solid var(--background-modifier-border);
+				flex-shrink: 0;
+				position: sticky;
+				bottom: 0;
+				background: var(--background-primary);
 			}
 
 			.button-container {

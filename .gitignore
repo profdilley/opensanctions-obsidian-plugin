@@ -108,3 +108,6 @@ main.js
 
 # Plugin files
 data.json
+
+# Sample files
+WIKILINK_TEST_EXAMPLE.md

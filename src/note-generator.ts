@@ -80,12 +80,13 @@ export class NoteGenerator {
 			// Process and format values
 			const formatted = values.map(v => this.formatValue(v, config.wikilink));
 
-			// Add to YAML
+			// Add to YAML with proper formatting
 			if (formatted.length === 1) {
 				lines.push(`${yamlKey}: ${formatted[0]}`);
-			} else {
-				lines.push(`${yamlKey}:`);
-				formatted.forEach(f => lines.push(`  - ${f}`));
+			} else if (formatted.length > 1) {
+				// Use inline array format for better wikilink compatibility
+				const arrayContent = formatted.join(', ');
+				lines.push(`${yamlKey}: [${arrayContent}]`);
 			}
 		}
 
@@ -140,8 +141,8 @@ export class NoteGenerator {
 		const sanitized = String(value).replace(/"/g, "'");
 
 		if (wikilink) {
-			// Don't quote wikilinks in YAML - they need to be unquoted to work
-			return `[[${this.sanitizeWikilink(sanitized)}]]`;
+			// Wikilinks should always be quoted in YAML for proper parsing
+			return `"[[${this.sanitizeWikilink(sanitized)}]]"`;
 		} else {
 			return `"${sanitized}"`;
 		}

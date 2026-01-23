@@ -1,0 +1,320 @@
+/* OpenSanctions Plugin Styles */
+
+/* Ribbon icon styling */
+.opensanctions-ribbon-class {
+	color: var(--text-muted);
+}
+
+.opensanctions-ribbon-class:hover {
+	color: var(--text-normal);
+}
+
+/* Search Modal Styles */
+.opensanctions-search-modal .modal-content {
+	min-width: 700px;
+	max-width: 900px;
+}
+
+.opensanctions-search-form {
+	margin-bottom: 20px;
+}
+
+.opensanctions-filters {
+	display: flex;
+	gap: 15px;
+	flex-wrap: wrap;
+	margin-top: 15px;
+	padding-top: 15px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.opensanctions-entity-row {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 15px;
+	margin-bottom: 10px;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.opensanctions-entity-row:hover {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--interactive-normal);
+}
+
+.opensanctions-entity-row.selected {
+	background-color: var(--background-modifier-active-hover);
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.opensanctions-entity-title {
+	font-size: 1.1em;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: var(--text-normal);
+}
+
+.opensanctions-entity-meta {
+	display: flex;
+	gap: 15px;
+	margin-bottom: 8px;
+	font-size: 0.9em;
+	color: var(--text-muted);
+}
+
+.opensanctions-entity-topics {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.opensanctions-topic-tag {
+	background-color: var(--tag-background);
+	color: var(--tag-color);
+	padding: 3px 8px;
+	border-radius: 12px;
+	font-size: 0.8em;
+	font-weight: 500;
+}
+
+.opensanctions-topic-tag.sanction {
+	background-color: var(--color-red);
+	color: white;
+}
+
+.opensanctions-topic-tag.pep {
+	background-color: var(--color-orange);
+	color: white;
+}
+
+.opensanctions-topic-tag.oligarch {
+	background-color: var(--color-purple);
+	color: white;
+}
+
+/* Field Configuration Modal */
+.opensanctions-field-config-modal .modal-content {
+	min-width: 800px;
+}
+
+.opensanctions-field-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 20px 0;
+}
+
+.opensanctions-field-table th,
+.opensanctions-field-table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.opensanctions-field-table th {
+	background-color: var(--background-secondary);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.opensanctions-field-table td input[type="text"] {
+	width: 100%;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.opensanctions-field-table td input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+}
+
+.opensanctions-field-delete-btn {
+	background-color: var(--color-red);
+	color: white;
+	border: none;
+	padding: 6px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9em;
+}
+
+.opensanctions-field-delete-btn:hover {
+	background-color: var(--color-red-hover);
+}
+
+/* Preview Modal */
+.opensanctions-preview-modal .modal-content {
+	min-width: 700px;
+}
+
+.opensanctions-preview-content {
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 20px;
+	margin: 20px 0;
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+	line-height: 1.5;
+	max-height: 500px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+}
+
+/* Button Styles */
+.opensanctions-btn {
+	padding: 10px 20px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: 0.95em;
+	transition: all 0.2s ease;
+}
+
+.opensanctions-btn:hover {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--interactive-normal);
+}
+
+.opensanctions-btn.primary {
+	background-color: var(--interactive-accent);
+	color: white;
+	border-color: var(--interactive-accent);
+}
+
+.opensanctions-btn.primary:hover {
+	background-color: var(--interactive-accent-hover);
+	border-color: var(--interactive-accent-hover);
+}
+
+/* Loading States */
+.opensanctions-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	color: var(--text-muted);
+}
+
+.opensanctions-loading::before {
+	content: "";
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--background-modifier-border);
+	border-top: 2px solid var(--interactive-accent);
+	border-radius: 50%;
+	animation: opensanctions-spin 1s linear infinite;
+	margin-right: 10px;
+}
+
+@keyframes opensanctions-spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Error States */
+.opensanctions-error {
+	background-color: var(--background-modifier-error);
+	border: 1px solid var(--color-red);
+	border-radius: 6px;
+	padding: 15px;
+	margin: 15px 0;
+	color: var(--color-red);
+}
+
+.opensanctions-error .error-title {
+	font-weight: 600;
+	margin-bottom: 5px;
+}
+
+/* Success States */
+.opensanctions-success {
+	background-color: var(--background-modifier-success);
+	border: 1px solid var(--color-green);
+	border-radius: 6px;
+	padding: 15px;
+	margin: 15px 0;
+	color: var(--color-green);
+}
+
+/* Settings Page Styles */
+.opensanctions-settings-section {
+	margin-bottom: 40px;
+}
+
+.opensanctions-settings-section h3 {
+	color: var(--text-normal);
+	font-size: 1.2em;
+	margin-bottom: 15px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.opensanctions-api-status {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+	padding: 10px;
+	border-radius: 6px;
+	font-size: 0.9em;
+}
+
+.opensanctions-api-status.connected {
+	background-color: var(--background-modifier-success);
+	color: var(--color-green);
+}
+
+.opensanctions-api-status.disconnected {
+	background-color: var(--background-modifier-error);
+	color: var(--color-red);
+}
+
+.opensanctions-api-status.testing {
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.opensanctions-search-modal .modal-content,
+	.opensanctions-field-config-modal .modal-content,
+	.opensanctions-preview-modal .modal-content {
+		min-width: auto;
+		max-width: 95vw;
+		margin: 10px;
+	}
+
+	.opensanctions-filters {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.opensanctions-entity-meta {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.opensanctions-field-table {
+		font-size: 0.9em;
+	}
+
+	.opensanctions-field-table th,
+	.opensanctions-field-table td {
+		padding: 8px;
+	}
+}
+
+/* Dark Theme Adjustments */
+.theme-dark .opensanctions-preview-content {
+	background-color: var(--background-primary-alt);
+}
+
+.theme-dark .opensanctions-field-table th {
+	background-color: var(--background-primary-alt);
+}

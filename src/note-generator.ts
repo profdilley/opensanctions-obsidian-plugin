@@ -49,7 +49,6 @@ export class NoteGenerator {
 
 	generateYamlFrontmatter(entity: OpenSanctionsEntity): string {
 		const lines: string[] = ['---'];
-		let sourceUrls: string[] = []; // Collect all source URLs separately
 
 		// Always include OpenSanctions ID
 		lines.push(`opensanctions_id: "${entity.id}"`);
@@ -71,12 +70,6 @@ export class NoteGenerator {
 					lines.push(`sanctioned: ${isSanctioned}`);
 					continue;
 				}
-			}
-
-			// Special handling for sourceUrl - collect but don't add yet
-			if (apiField === 'sourceUrl' || config.yamlKey === 'source url') {
-				sourceUrls.push(...values);
-				continue;
 			}
 
 			// Skip empty values
@@ -102,20 +95,9 @@ export class NoteGenerator {
 			this.addRelationshipFields(lines, entity as EnrichedEntity);
 		}
 
-		// Add collected source URLs (combines entity sources + OpenSanctions URL)
+		// Add metadata fields
 		if (this.settings.includeSourceUrl) {
-			const opensanctionsUrl = `https://opensanctions.org/entities/${entity.id}`;
-			sourceUrls.push(opensanctionsUrl);
-
-			// Remove duplicates and empty values
-			const uniqueSourceUrls = [...new Set(sourceUrls.filter(url => url && url.trim()))];
-
-			if (uniqueSourceUrls.length === 1) {
-				lines.push(`source url: "${uniqueSourceUrls[0]}"`);
-			} else if (uniqueSourceUrls.length > 1) {
-				const formattedUrls = uniqueSourceUrls.map(url => `"${url}"`);
-				lines.push(`source url: [${formattedUrls.join(', ')}]`);
-			}
+			lines.push(`source url: "https://opensanctions.org/entities/${entity.id}"`);
 		}
 
 		if (this.settings.includeImportDate) {
@@ -123,8 +105,59 @@ export class NoteGenerator {
 			lines.push(`imported: "${today}"`);
 		}
 
-		lines.push('---');
-		return lines.join('\n');
+		// Final cleanup: Remove duplicate YAML keys
+		const cleanedLines = this.removeDuplicateYamlKeys(lines);
+
+		cleanedLines.push('---');
+		return cleanedLines.join('\n');
+	}
+
+	private removeDuplicateYamlKeys(lines: string[]): string[] {
+		const keyValues: Map<string, string[]> = new Map();
+		const nonKeyLines: string[] = [];
+
+		// Parse lines and group by keys
+		for (const line of lines) {
+			const keyMatch = line.match(/^([^:]+):\s*(.*)$/);
+			if (keyMatch) {
+				const key = keyMatch[1].trim();
+				const value = keyMatch[2].trim();
+
+				if (!keyValues.has(key)) {
+					keyValues.set(key, []);
+				}
+				keyValues.get(key)!.push(value);
+			} else {
+				nonKeyLines.push(line);
+			}
+		}
+
+		// Rebuild lines, combining duplicates into arrays
+		const result: string[] = [];
+		for (const line of lines) {
+			const keyMatch = line.match(/^([^:]+):/);
+			if (keyMatch) {
+				const key = keyMatch[1].trim();
+				const values = keyValues.get(key);
+
+				if (values && values.length > 1) {
+					// Multiple values - combine into array
+					if (!result.some(l => l.startsWith(key + ':'))) {
+						result.push(`${key}: [${values.join(', ')}]`);
+					}
+				} else if (values && values.length === 1) {
+					// Single value - add as-is
+					if (!result.some(l => l.startsWith(key + ':'))) {
+						result.push(`${key}: ${values[0]}`);
+					}
+				}
+			} else {
+				// Non-key line (like ---)
+				result.push(line);
+			}
+		}
+
+		return result;
 	}
 
 	private addRelationshipFields(lines: string[], entity: EnrichedEntity) {

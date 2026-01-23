@@ -14,6 +14,7 @@ export class SearchModal extends Modal {
 	private totalResults = 0;
 	private currentOffset = 0;
 	private isLoading = false;
+	private allCurrentPageSelected = false;
 
 	constructor(app: App, apiClient: OpenSanctionsApiClient, settings: PluginSettings, mode: ImportMode = ImportMode.STANDARD) {
 		super(app);
@@ -202,6 +203,7 @@ export class SearchModal extends Modal {
 				this.selectedEntities.delete(entity.id);
 				row.removeClass('selected');
 			}
+			this.updateSelectAllState();
 			this.updateActionButtons();
 		});
 
@@ -265,6 +267,17 @@ export class SearchModal extends Modal {
 
 		const selectedCount = this.selectedEntities.size;
 		const buttonContainer = this.actionContainer.createDiv('button-container');
+
+		// Show Select All button if we have search results
+		if (this.searchResults.length > 0) {
+			const selectAllButton = buttonContainer.createEl('button', {
+				text: this.allCurrentPageSelected ? 'Deselect All' : 'Select All',
+				cls: 'select-all-button'
+			});
+			selectAllButton.addEventListener('click', () => {
+				this.toggleSelectAll();
+			});
+		}
 
 		if (selectedCount > 0) {
 			// Mode indicator
@@ -330,9 +343,11 @@ export class SearchModal extends Modal {
 			this.searchResults = response.results || [];
 			this.totalResults = response.total?.value || 0;
 			this.selectedEntities.clear();
+			this.allCurrentPageSelected = false;
 
 			this.updateResultsHeader();
 			this.createResultsList();
+			this.updateSelectAllState();
 			this.updateActionButtons();
 
 		} catch (error) {
@@ -357,6 +372,7 @@ export class SearchModal extends Modal {
 
 			this.updateResultsHeader();
 			this.createResultsList();
+			this.updateSelectAllState();
 
 		} catch (error) {
 			console.error('Load more failed:', error);
@@ -453,6 +469,51 @@ export class SearchModal extends Modal {
 			});
 			// Note: settings will be saved by parent after import completes
 		}
+	}
+
+	private toggleSelectAll() {
+		if (this.allCurrentPageSelected) {
+			// Deselect all current page items
+			this.searchResults.forEach(entity => {
+				this.selectedEntities.delete(entity.id);
+			});
+			this.allCurrentPageSelected = false;
+		} else {
+			// Select all current page items
+			this.searchResults.forEach(entity => {
+				this.selectedEntities.add(entity.id);
+			});
+			this.allCurrentPageSelected = true;
+		}
+
+		// Update the visual state of checkboxes
+		this.updateEntityRowSelections();
+		this.updateActionButtons();
+	}
+
+	private updateEntityRowSelections() {
+		const entityRows = this.resultsContainer.querySelectorAll('.entity-row');
+		entityRows.forEach((row, index) => {
+			const entity = this.searchResults[index];
+			if (!entity) return;
+
+			const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement;
+			if (checkbox) {
+				checkbox.checked = this.selectedEntities.has(entity.id);
+				if (checkbox.checked) {
+					row.classList.add('selected');
+				} else {
+					row.classList.remove('selected');
+				}
+			}
+		});
+	}
+
+	private updateSelectAllState() {
+		// Check if all current page items are selected
+		this.allCurrentPageSelected = this.searchResults.every(entity =>
+			this.selectedEntities.has(entity.id)
+		);
 	}
 
 	private getCountryName(countryCode: string): string {
@@ -626,6 +687,17 @@ export class SearchModal extends Modal {
 				background: var(--color-green);
 				border-color: var(--color-green);
 				font-weight: 600;
+			}
+
+			.select-all-button {
+				background: var(--background-secondary) !important;
+				border-color: var(--interactive-accent) !important;
+				color: var(--interactive-accent) !important;
+				font-weight: 500;
+			}
+
+			.select-all-button:hover {
+				background: var(--background-modifier-hover) !important;
 			}
 
 			.loading-state {

@@ -140,7 +140,8 @@ export class NoteGenerator {
 		const sanitized = String(value).replace(/"/g, "'");
 
 		if (wikilink) {
-			return `"[[${this.sanitizeWikilink(sanitized)}]]"`;
+			// Don't quote wikilinks in YAML - they need to be unquoted to work
+			return `[[${this.sanitizeWikilink(sanitized)}]]`;
 		} else {
 			return `"${sanitized}"`;
 		}

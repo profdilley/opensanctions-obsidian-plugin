@@ -44,10 +44,11 @@ export class FieldConfigModal extends Modal {
 
 		// Header
 		const headerRow = tableContainer.createDiv('field-config-row field-config-header');
-		headerRow.createEl('div', { text: 'API Field', cls: 'field-config-cell' });
-		headerRow.createEl('div', { text: 'YAML Key', cls: 'field-config-cell' });
-		headerRow.createEl('div', { text: 'Include', cls: 'field-config-cell' });
-		headerRow.createEl('div', { text: 'Wikilink', cls: 'field-config-cell' });
+		headerRow.createEl('div', { text: 'API Field', cls: 'field-config-cell field-config-cell-wide' });
+		headerRow.createEl('div', { text: 'YAML Key', cls: 'field-config-cell field-config-cell-wide' });
+		headerRow.createEl('div', { text: 'Include?', cls: 'field-config-cell field-config-cell-narrow' });
+		headerRow.createEl('div', { text: 'Wikilink?', cls: 'field-config-cell field-config-cell-narrow' });
+		headerRow.createEl('div', { text: 'Delete', cls: 'field-config-cell field-config-cell-narrow' });
 
 		// Field rows
 		for (const [apiField, config] of Object.entries(this.tempConfig)) {
@@ -81,11 +82,11 @@ export class FieldConfigModal extends Modal {
 		const row = container.createDiv('field-config-row');
 
 		// API Field (read-only)
-		const fieldCell = row.createDiv('field-config-cell');
+		const fieldCell = row.createDiv('field-config-cell field-config-cell-wide');
 		fieldCell.createEl('span', { text: apiField });
 
 		// YAML Key (editable)
-		const yamlCell = row.createDiv('field-config-cell');
+		const yamlCell = row.createDiv('field-config-cell field-config-cell-wide');
 		const yamlInput = yamlCell.createEl('input', {
 			type: 'text',
 			value: config.yamlKey || apiField
@@ -96,7 +97,7 @@ export class FieldConfigModal extends Modal {
 		});
 
 		// Include checkbox
-		const includeCell = row.createDiv('field-config-cell');
+		const includeCell = row.createDiv('field-config-cell field-config-cell-narrow');
 		const includeCheckbox = includeCell.createEl('input', {
 			type: 'checkbox'
 		});
@@ -113,7 +114,7 @@ export class FieldConfigModal extends Modal {
 		});
 
 		// Wikilink checkbox
-		const wikilinkCell = row.createDiv('field-config-cell');
+		const wikilinkCell = row.createDiv('field-config-cell field-config-cell-narrow');
 		const wikilinkCheckbox = wikilinkCell.createEl('input', {
 			type: 'checkbox'
 		});
@@ -130,7 +131,7 @@ export class FieldConfigModal extends Modal {
 		});
 
 		// Delete button
-		const deleteCell = row.createDiv('field-config-cell');
+		const deleteCell = row.createDiv('field-config-cell field-config-cell-narrow');
 		const deleteButton = deleteCell.createEl('button', {
 			text: '×',
 			cls: 'field-config-delete'
@@ -218,8 +219,19 @@ export class FieldConfigModal extends Modal {
 			}
 
 			.field-config-cell {
-				flex: 1;
 				padding: 0 8px;
+			}
+
+			.field-config-cell-wide {
+				flex: 2;
+			}
+
+			.field-config-cell-narrow {
+				flex: 0 0 80px;
+				text-align: center;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 
 			.field-config-cell input[type="text"] {

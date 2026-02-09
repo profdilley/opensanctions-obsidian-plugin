@@ -1,8 +1,8 @@
 {
 	"id": "opensanctions-importer",
 	"name": "OpenSanctions Importer",
-	"version": "1.7.1",
-	"minAppVersion": "1.7.1",
+	"version": "1.7.2",
+	"minAppVersion": "1.7.2",
 	"description": "Import entities from OpenSanctions API into Obsidian notes with automatic wikilinks and graph connections",
 	"author": "LC Dilley PhD / ProfDilley",
 	"authorUrl": "https://github.com/profdilley",

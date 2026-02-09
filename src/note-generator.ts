@@ -85,6 +85,10 @@ export class NoteGenerator {
 				}
 			}
 
+			// Filter to only string values (the API can return nested entity objects
+			// for relationship properties; those are handled separately)
+			values = values.filter(v => typeof v === 'string');
+
 			// Skip empty values
 			if (values.length === 0) continue;
 
@@ -130,8 +134,9 @@ export class NoteGenerator {
 		const nonKeyLines: string[] = [];
 
 		// Parse lines and group by keys
+		// Skip lines that are YAML list items (start with whitespace + dash)
 		for (const line of lines) {
-			const keyMatch = line.match(/^([^:]+):\s*(.*)$/);
+			const keyMatch = !line.match(/^\s+-/) && line.match(/^([^:]+):\s*(.*)$/);
 			if (keyMatch) {
 				const key = keyMatch[1].trim();
 				const value = keyMatch[2].trim();
@@ -162,7 +167,7 @@ export class NoteGenerator {
 		// Rebuild lines, combining duplicates into flat arrays
 		const result: string[] = [];
 		for (const line of lines) {
-			const keyMatch = line.match(/^([^:]+):/);
+			const keyMatch = !line.match(/^\s+-/) && line.match(/^([^:]+):/);
 			if (keyMatch) {
 				const key = keyMatch[1].trim();
 				const values = keyValues.get(key);
@@ -307,9 +312,11 @@ export class NoteGenerator {
 	}
 
 	private sanitizeWikilink(value: string): string {
-		// Clean up value for use in wikilinks
+		// Clean up value for use in wikilinks inside YAML quoted strings
 		return value
 			.replace(/[\[\]]/g, '')           // Remove existing brackets
+			.replace(/"/g, "'")               // Replace double quotes (breaks YAML quoting)
+			.replace(/[|#^]/g, '')            // Remove pipe, hash, caret (break Obsidian wikilinks)
 			.replace(/\r?\n/g, ' ')           // Replace line breaks with spaces
 			.replace(/\s+/g, ' ')             // Normalize multiple spaces
 			.trim();

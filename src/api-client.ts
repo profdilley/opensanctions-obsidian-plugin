@@ -160,6 +160,19 @@ export class OpenSanctionsApiClient {
 	}
 
 	async getEntity(entityId: string): Promise<OpenSanctionsEntity> {
+		// Use nested=false to get clean string property values for note generation.
+		// Relationship data is fetched separately via the adjacent endpoint.
+		const response = await this.makeRequest(
+			`/entities/${encodeURIComponent(entityId)}`,
+			{ nested: 'false' }
+		);
+		return response as OpenSanctionsEntity;
+	}
+
+	/**
+	 * Fetch entity WITH nested=true to extract embedded relationship entities.
+	 */
+	private async getEntityNested(entityId: string): Promise<OpenSanctionsEntity> {
 		const response = await this.makeRequest(`/entities/${encodeURIComponent(entityId)}`);
 		return response as OpenSanctionsEntity;
 	}
@@ -265,7 +278,7 @@ export class OpenSanctionsApiClient {
 	}
 
 	async fetchWithRelationships(entityId: string): Promise<EnrichedEntity> {
-		// Fetch primary entity (nested=true is the default, which embeds relationship entities)
+		// Fetch entity with nested=false for clean string properties (used for note generation)
 		const entity = await this.getEntity(entityId);
 
 		// Try to fetch adjacent entities (relationships) from dedicated endpoint
@@ -276,18 +289,14 @@ export class OpenSanctionsApiClient {
 			console.warn('Failed to fetch relationships for entity:', entityId, error);
 		}
 
-		// Also extract any relationship entities nested in the main entity's properties
-		// (the /entities/{id} endpoint with nested=true embeds these in properties like
-		// ownershipOwner, directorshipDirector, membershipMember, etc.)
-		const nestedFromEntity = this.extractNestedEntities(entity);
-		if (nestedFromEntity.length > 0) {
-			// Merge nested entities, avoiding duplicates by ID
-			const existingIds = new Set(adjacent.map(a => a.id));
-			for (const nested of nestedFromEntity) {
-				if (!existingIds.has(nested.id)) {
-					adjacent.push(nested);
-					existingIds.add(nested.id);
-				}
+		// If adjacent endpoint returned nothing, try extracting relationship entities
+		// from the main entity response with nested=true as a fallback
+		if (adjacent.length === 0) {
+			try {
+				const nestedEntity = await this.getEntityNested(entityId);
+				adjacent = this.extractNestedEntities(nestedEntity);
+			} catch (error) {
+				console.warn('Failed to fetch nested entity for relationships:', entityId, error);
 			}
 		}
 

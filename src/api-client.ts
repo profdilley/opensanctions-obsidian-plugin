@@ -187,60 +187,148 @@ export class OpenSanctionsApiClient {
 			console.warn('Failed to fetch relationships for entity:', entityId, error);
 		}
 
+		// Build a caption lookup map from all adjacent entities
+		// The adjacent response includes both relationship entities and connected entities
+		const captionMap = new Map<string, string>();
+		captionMap.set(entityId, entity.caption);
+		for (const adj of adjacent) {
+			if (adj.caption && adj.id) {
+				captionMap.set(adj.id, adj.caption);
+			}
+		}
+
+		// Collect entity IDs that need caption resolution
+		const unresolvedIds = new Set<string>();
+
 		// Process relationships into structured format
 		const relationships = {
 			directorOf: [] as string[],
 			ownerOf: [] as string[],
 			ownedBy: [] as string[],
+			employeeOf: [] as string[],
+			memberOf: [] as string[],
 			relatedTo: [] as string[],
 			family: [] as string[],
 			coConspirator: [] as string[]
 		};
+
+		// First pass: collect target IDs from relationship entities
+		const relationshipEntries: { type: string; targetId: string }[] = [];
 
 		for (const rel of adjacent) {
 			switch (rel.schema) {
 				case 'Directorship':
 					if (rel.properties.director?.includes(entityId)) {
 						const org = rel.properties.organization?.[0];
-						if (org) relationships.directorOf.push(org);
+						if (org) {
+							relationshipEntries.push({ type: 'directorOf', targetId: org });
+							if (!captionMap.has(org)) unresolvedIds.add(org);
+						}
 					}
 					break;
 
 				case 'Ownership':
 					if (rel.properties.owner?.includes(entityId)) {
 						const asset = rel.properties.asset?.[0];
-						if (asset) relationships.ownerOf.push(asset);
+						if (asset) {
+							relationshipEntries.push({ type: 'ownerOf', targetId: asset });
+							if (!captionMap.has(asset)) unresolvedIds.add(asset);
+						}
 					} else if (rel.properties.asset?.includes(entityId)) {
 						const owner = rel.properties.owner?.[0];
-						if (owner) relationships.ownedBy.push(owner);
+						if (owner) {
+							relationshipEntries.push({ type: 'ownedBy', targetId: owner });
+							if (!captionMap.has(owner)) unresolvedIds.add(owner);
+						}
 					}
 					break;
 
-				case 'Family':
-					const relative = rel.properties.relative?.[0];
-					if (relative && relative !== entityId) {
-						relationships.family.push(relative);
+				case 'Employment':
+					if (rel.properties.employee?.includes(entityId)) {
+						const employer = rel.properties.employer?.[0];
+						if (employer) {
+							relationshipEntries.push({ type: 'employeeOf', targetId: employer });
+							if (!captionMap.has(employer)) unresolvedIds.add(employer);
+						}
 					}
 					break;
 
-				case 'Associate':
-					const associate = rel.properties.associate?.[0];
-					if (associate && associate !== entityId) {
-						relationships.coConspirator.push(associate);
+				case 'Membership':
+					if (rel.properties.member?.includes(entityId)) {
+						const org = rel.properties.organization?.[0];
+						if (org) {
+							relationshipEntries.push({ type: 'memberOf', targetId: org });
+							if (!captionMap.has(org)) unresolvedIds.add(org);
+						}
 					}
 					break;
+
+				case 'Family': {
+					const personIds = rel.properties.person || [];
+					const relativeIds = rel.properties.relative || [];
+					// Find the target (the entity that isn't us)
+					const targetId = personIds.includes(entityId)
+						? relativeIds[0]
+						: relativeIds.includes(entityId)
+							? personIds[0]
+							: null;
+					if (targetId && targetId !== entityId) {
+						relationshipEntries.push({ type: 'family', targetId });
+						if (!captionMap.has(targetId)) unresolvedIds.add(targetId);
+					}
+					break;
+				}
+
+				case 'Associate': {
+					const assocPersonIds = rel.properties.person || [];
+					const associateIds = rel.properties.associate || [];
+					const assocTargetId = assocPersonIds.includes(entityId)
+						? associateIds[0]
+						: associateIds.includes(entityId)
+							? assocPersonIds[0]
+							: null;
+					if (assocTargetId && assocTargetId !== entityId) {
+						relationshipEntries.push({ type: 'coConspirator', targetId: assocTargetId });
+						if (!captionMap.has(assocTargetId)) unresolvedIds.add(assocTargetId);
+					}
+					break;
+				}
 
 				case 'UnknownLink':
 				case 'Succession':
-					// Generic relationships
+				case 'Representation': {
 					const subject = rel.properties.subject?.[0];
 					const object = rel.properties.object?.[0];
 					if (subject === entityId && object) {
-						relationships.relatedTo.push(object);
+						relationshipEntries.push({ type: 'relatedTo', targetId: object });
+						if (!captionMap.has(object)) unresolvedIds.add(object);
 					} else if (object === entityId && subject) {
-						relationships.relatedTo.push(subject);
+						relationshipEntries.push({ type: 'relatedTo', targetId: subject });
+						if (!captionMap.has(subject)) unresolvedIds.add(subject);
 					}
 					break;
+				}
+			}
+		}
+
+		// Resolve any unresolved entity IDs to captions
+		for (const targetId of unresolvedIds) {
+			try {
+				const targetEntity = await this.getEntity(targetId);
+				if (targetEntity?.caption) {
+					captionMap.set(targetId, targetEntity.caption);
+				}
+			} catch {
+				// Use ID as fallback if entity can't be fetched
+			}
+		}
+
+		// Second pass: populate relationships with resolved captions
+		for (const entry of relationshipEntries) {
+			const displayName = captionMap.get(entry.targetId) || entry.targetId;
+			const arr = relationships[entry.type as keyof typeof relationships];
+			if (arr && !arr.includes(displayName)) {
+				arr.push(displayName);
 			}
 		}
 

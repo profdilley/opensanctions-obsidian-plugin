@@ -179,6 +179,8 @@ export class RelationshipProcessor {
 			directorOf: [] as string[],
 			ownerOf: [] as string[],
 			ownedBy: [] as string[],
+			employeeOf: [] as string[],
+			memberOf: [] as string[],
 			relatedTo: [] as string[],
 			family: [] as string[],
 			coConspirator: [] as string[]
@@ -200,6 +202,18 @@ export class RelationshipProcessor {
 						structured.ownerOf.push(displayName);
 					} else if (rel.properties.asset?.includes(sourceEntityId)) {
 						structured.ownedBy.push(displayName);
+					}
+					break;
+
+				case 'employment':
+					if (rel.properties.employee?.includes(sourceEntityId)) {
+						structured.employeeOf.push(displayName);
+					}
+					break;
+
+				case 'membership':
+					if (rel.properties.member?.includes(sourceEntityId)) {
+						structured.memberOf.push(displayName);
 					}
 					break;
 

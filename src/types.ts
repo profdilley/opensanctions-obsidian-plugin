@@ -82,6 +82,8 @@ export interface EnrichedEntity extends OpenSanctionsEntity {
 		directorOf: string[];
 		ownerOf: string[];
 		ownedBy: string[];
+		employeeOf: string[];
+		memberOf: string[];
 		relatedTo: string[];
 		family: string[];
 		coConspirator: string[];
@@ -99,7 +101,7 @@ export const DEFAULT_FIELD_CONFIGS: Record<string, FieldConfig> = {
 		innCode: { include: true, wikilink: false, yamlKey: 'INN' },
 		address: { include: true, wikilink: false, yamlKey: 'address' },
 		email: { include: true, wikilink: false, yamlKey: 'email' },
-		topics: { include: true, wikilink: false, yamlKey: 'sanctioned' },
+		topics: { include: true, wikilink: false, yamlKey: 'risk_flags' },
 		sourceUrl: { include: true, wikilink: false, yamlKey: 'source url' }
 	},
 	Company: {
@@ -119,7 +121,7 @@ export const DEFAULT_FIELD_CONFIGS: Record<string, FieldConfig> = {
 		address: { include: true, wikilink: false, yamlKey: 'address' },
 		phone: { include: true, wikilink: false, yamlKey: 'phone number' },
 		website: { include: true, wikilink: false, yamlKey: 'website' },
-		topics: { include: true, wikilink: false, yamlKey: 'sanctioned' }
+		topics: { include: true, wikilink: false, yamlKey: 'risk_flags' }
 	},
 	LegalEntity: {
 		name: { include: true, wikilink: false, yamlKey: 'aliases' },
@@ -129,7 +131,7 @@ export const DEFAULT_FIELD_CONFIGS: Record<string, FieldConfig> = {
 		innCode: { include: true, wikilink: false, yamlKey: 'INN' },
 		ogrnCode: { include: true, wikilink: false, yamlKey: 'OGRN' },
 		address: { include: true, wikilink: false, yamlKey: 'address' },
-		topics: { include: true, wikilink: false, yamlKey: 'sanctioned' }
+		topics: { include: true, wikilink: false, yamlKey: 'risk_flags' }
 	}
 };
 

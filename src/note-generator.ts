@@ -70,6 +70,19 @@ export class NoteGenerator {
 					lines.push(`sanctioned: ${isSanctioned}`);
 					continue;
 				}
+				// Convert topics to human-readable risk flag labels
+				if (config.yamlKey === 'risk_flags') {
+					// Always output sanctioned boolean for quick filtering
+					lines.push(`sanctioned: ${values.includes('sanction')}`);
+					const topicLabels = this.getTopicLabels(values);
+					if (topicLabels.length === 1) {
+						lines.push(`risk_flags: "${topicLabels[0]}"`);
+					} else if (topicLabels.length > 1) {
+						const formatted = topicLabels.map(l => `"${l}"`).join(', ');
+						lines.push(`risk_flags: [${formatted}]`);
+					}
+					continue;
+				}
 			}
 
 			// Skip empty values
@@ -222,6 +235,31 @@ export class NoteGenerator {
 		return items;
 	}
 
+	private getTopicLabels(topics: string[]): string[] {
+		const topicMap: Record<string, string> = {
+			'sanction': 'Sanctioned',
+			'role.pep': 'PEP (Politically Exposed Person)',
+			'role.rca': 'Close Associate',
+			'role.oligarch': 'Oligarch',
+			'wanted': 'Wanted',
+			'debarment': 'Debarred',
+			'export.control': 'Export Controlled',
+			'corp.disqual': 'Disqualified',
+			'mil': 'Military',
+			'role.diplo': 'Diplomat',
+			'role.judge': 'Judge',
+			'poi': 'Person of Interest',
+			'crime': 'Criminal',
+			'crime.war': 'War Crimes',
+			'asset.frozen': 'Frozen Assets',
+			'reg.action': 'Regulatory Action'
+		};
+
+		return topics
+			.map(topic => topicMap[topic] || topic)
+			.filter(Boolean);
+	}
+
 	private addRelationshipFields(lines: string[], entity: EnrichedEntity) {
 		const relationships = entity.relationships;
 		if (!relationships) return;
@@ -230,6 +268,8 @@ export class NoteGenerator {
 			directorOf: 'director of',
 			ownerOf: 'owner of',
 			ownedBy: 'owned by',
+			employeeOf: 'employee of',
+			memberOf: 'member of',
 			relatedTo: 'related to',
 			family: 'family',
 			coConspirator: 'co-conspirator'

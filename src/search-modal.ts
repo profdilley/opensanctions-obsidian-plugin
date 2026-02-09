@@ -119,7 +119,7 @@ export class SearchModal extends Modal {
 				dropdown.addOption('', 'All Datasets');
 				dropdown.addOption('us_ofac_sdn', 'US OFAC SDN');
 				dropdown.addOption('eu_fsf', 'EU Financial Sanctions');
-				dropdown.addOption('gb_hmt_sanctions', 'UK HMT Sanctions');
+				dropdown.addOption('gb_icdo_sanctions', 'UK Consolidated Sanctions');
 				dropdown.addOption('ca_dfatd_sema_sanctions', 'Canada SEMA');
 				dropdown.addOption('au_dfat_sanctions', 'Australia DFAT');
 				dropdown.addOption('un_sc_sanctions', 'UN Security Council');

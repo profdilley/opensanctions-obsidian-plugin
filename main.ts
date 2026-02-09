@@ -251,13 +251,13 @@ class OpenSanctionsSettingTab extends PluginSettingTab {
 		try {
 			new Notice('Testing API connection...');
 
-			// Simple test search
+			// Simple test search to validate the API key works
 			const result = await this.plugin.apiClient.search({
 				query: 'test',
 				limit: 1
 			});
 
-			new Notice(`✓ Connected! Found ${result.total.value} entities available`);
+			new Notice('✓ API key is valid. Connection successful!');
 		} catch (error) {
 			console.error('API connection test failed:', error);
 			new Notice(`✗ Connection failed: ${error.message}`);

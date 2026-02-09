@@ -186,7 +186,8 @@ export function getDatasetLabel(dataset: string): string {
 	const datasetMap: Record<string, string> = {
 		'us_ofac_sdn': 'US OFAC SDN',
 		'eu_fsf': 'EU Financial Sanctions',
-		'gb_hmt_sanctions': 'UK HMT Sanctions',
+		'gb_hmt_sanctions': 'UK HMT Sanctions (Discontinued)',
+		'gb_icdo_sanctions': 'UK Consolidated Sanctions',
 		'ca_dfatd_sema_sanctions': 'Canada SEMA',
 		'au_dfat_sanctions': 'Australia DFAT',
 		'un_sc_sanctions': 'UN Security Council',

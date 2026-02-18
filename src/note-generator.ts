@@ -101,9 +101,9 @@ export class NoteGenerator {
 			if (formatted.length === 1) {
 				lines.push(`${yamlKey}: ${formatted[0]}`);
 			} else if (formatted.length > 1) {
-				// Use inline array format for better wikilink compatibility
-				const arrayContent = formatted.join(', ');
-				lines.push(`${yamlKey}: [${arrayContent}]`);
+				// Use YAML dash-list format to match Import JSON Enhance spec
+				lines.push(`${yamlKey}:`);
+				formatted.forEach(f => lines.push(`  - ${f}`));
 			}
 		}
 
@@ -173,11 +173,12 @@ export class NoteGenerator {
 				const values = keyValues.get(key);
 
 				if (values && values.length > 1) {
-					// Multiple values - combine into flat array
+					// Multiple values - combine into dash-list format
 					if (!result.some(l => l.startsWith(key + ':'))) {
-						// Remove duplicates and create flat array
+						// Remove duplicates and create dash-list
 						const uniqueValues = [...new Set(values)];
-						result.push(`${key}: [${uniqueValues.join(', ')}]`);
+						result.push(`${key}:`);
+						uniqueValues.forEach(v => result.push(`  - ${v}`));
 					}
 				} else if (values && values.length === 1) {
 					// Single value - add as-is
